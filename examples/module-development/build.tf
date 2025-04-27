@@ -291,11 +291,11 @@ module "flex_linux_function_app" {
       name = local.function_app_name
 
       app_settings = {
-        "AzureWebJobsStorage__accountName"       = module.sa.storage_account_names[local.storage_account_name]
-        "AzureSubscriptionId"                    = data.azurerm_client_config.current.subscription_id          # Replace with actual value
-        "StorageAccountResourceGroup"            = module.rg.rg_name                                           # Replace with actual value
-        "StorageAccountName"                     = module.sa.storage_account_names[local.storage_account_name] # Replace with actual value
-        "KeyVaultUri"                            = module.key_vault.key_vault_uris[0]
+        "AzureWebJobsStorage__accountName" = module.sa.storage_account_names[local.storage_account_name]
+        "AzureSubscriptionId"              = data.azurerm_client_config.current.subscription_id          # Replace with actual value
+        "StorageAccountResourceGroup"      = module.rg.rg_name                                           # Replace with actual value
+        "StorageAccountName"               = module.sa.storage_account_names[local.storage_account_name] # Replace with actual value
+        "KeyVaultUri"                      = module.key_vault.key_vault_uris[0]
       }
       public_network_access_enabled = true
       virtual_network_subnet_id     = module.network.subnets_ids[local.function_app_subnet_name]
