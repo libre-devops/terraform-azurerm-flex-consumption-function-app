@@ -290,17 +290,16 @@ module "flex_linux_function_app" {
       name = local.function_app_name
 
       app_settings = {
-        "AzureWebJobsStorage__accountName"       = module.sa.storage_account_names[local.storage_account_name]
-        "WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED" = "1"
-        "AzureSubscriptionId"                    = data.azurerm_client_config.current.subscription_id          # Replace with actual value
-        "StorageAccountResourceGroup"            = module.rg.rg_name                                           # Replace with actual value
-        "StorageAccountName"                     = module.sa.storage_account_names[local.storage_account_name] # Replace with actual value
-        "KeyVaultUri"                            = module.key_vault.key_vault_uris[0]
+        "AzureWebJobsStorage__accountName" = module.sa.storage_account_names[local.storage_account_name]
+        "AzureSubscriptionId"              = data.azurerm_client_config.current.subscription_id          # Replace with actual value
+        "StorageAccountResourceGroup"      = module.rg.rg_name                                           # Replace with actual value
+        "StorageAccountName"               = module.sa.storage_account_names[local.storage_account_name] # Replace with actual value
+        "KeyVaultUri"                      = module.key_vault.key_vault_uris[0]
       }
       public_network_access_enabled = true
       virtual_network_subnet_id     = module.network.subnets_ids[local.function_app_subnet_name]
       identity_type                 = "UserAssigned"
-      identity_ids                  = [module.user_assigned_managed_identity.managed_identity_principal_ids[local.user_assigned_identity_name]]
+      identity_ids                  = [module.user_assigned_managed_identity.managed_identity_ids[local.user_assigned_identity_name]]
       storage_container_endpoint    = "${module.sa.primary_blob_endpoints[local.storage_account_name]}${azurerm_storage_container.flex_function_app_container.name}"
       runtime_name                  = "python"
       runtime_version               = "3.11"

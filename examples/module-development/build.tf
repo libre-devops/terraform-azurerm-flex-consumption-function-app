@@ -292,7 +292,6 @@ module "flex_linux_function_app" {
 
       app_settings = {
         "AzureWebJobsStorage__accountName"       = module.sa.storage_account_names[local.storage_account_name]
-        "WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED" = "1"
         "AzureSubscriptionId"                    = data.azurerm_client_config.current.subscription_id          # Replace with actual value
         "StorageAccountResourceGroup"            = module.rg.rg_name                                           # Replace with actual value
         "StorageAccountName"                     = module.sa.storage_account_names[local.storage_account_name] # Replace with actual value
