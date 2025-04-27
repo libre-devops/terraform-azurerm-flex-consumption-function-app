@@ -84,7 +84,7 @@ module "network" {
       # Only assign delegation to subnet3
       delegation = name == local.function_app_subnet_name ? [
         {
-          type = "Microsoft.Web/serverFarms"
+          type = "Microsoft.App/environments"
         }
       ] : []
     }
@@ -291,7 +291,6 @@ module "flex_linux_function_app" {
       name = local.function_app_name
 
       app_settings = {
-        "FUNCTIONS_WORKER_RUNTIME"               = "python"
         "AzureWebJobsStorage__accountName"       = module.sa.storage_account_names[local.storage_account_name]
         "WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED" = "1"
         "AzureSubscriptionId"                    = data.azurerm_client_config.current.subscription_id          # Replace with actual value
@@ -305,7 +304,6 @@ module "flex_linux_function_app" {
       storage_container_endpoint    = "${module.sa.primary_blob_endpoints[local.storage_account_name]}${azurerm_storage_container.flex_function_app_container.name}"
       runtime_name                  = "python"
       runtime_version               = "3.11"
-
 
       create_new_app_insights                            = true
       workspace_id                                       = module.law.law_id

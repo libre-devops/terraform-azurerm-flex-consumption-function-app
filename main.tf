@@ -26,9 +26,9 @@ resource "azurerm_function_app_flex_consumption" "function_app" {
   runtime_version                   = lower(each.value.runtime_version)
   storage_container_type            = coalesce(each.value.storage_container_type, "blobContainer")
   storage_container_endpoint        = each.value.storage_container_endpoint
-  storage_authentication_type       = coalesce(each.value.storage_authentication_type, "SystemAssignedIdentity")
+  storage_authentication_type       = lower(each.value.identity_type) == "systemassigned" ? "SystemAssignedIdentity" : lower(each.value.identity_type) == "userassigned" && each.value.identity_ids != [] ? "UserAssignedIdentity" : each.value.storage_authentication_type
   storage_access_key                = each.value.storage_authentication_type == "StorageAccountConnectionString" ? each.value.storage_access_key : null
-  storage_user_assigned_identity_id = each.value.storage_user_assigned_identity_id
+  storage_user_assigned_identity_id = lower(each.value.identity_type) == "userassigned" && each.value.identity_ids != [] ? each.value.identity_ids[0] : each.value.storage_user_assigned_identity_id
 
   maximum_instance_count = each.value.maximum_instance_count
   instance_memory_in_mb  = each.value.instance_memory_in_mb
