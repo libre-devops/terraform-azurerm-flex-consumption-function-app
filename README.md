@@ -404,7 +404,11 @@ resource "azurerm_function_app_flex_consumption" "function_app" {
   }
 
   lifecycle {
-    ignore_changes = [tags]
+    ignore_changes = [
+      tags["hidden-link: /app-insights-conn-string"],
+      tags["hidden-link: /app-insights-instrumentation-key"],
+      tags["hidden-link: /app-insights-resource-id"],
+    ]
   }
 }
 ```
