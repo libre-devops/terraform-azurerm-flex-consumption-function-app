@@ -22,28 +22,28 @@ resource "azurerm_function_app_flex_consumption" "function_app" {
   resource_group_name = each.value.rg_name
 
   # ── Flex‑specific mandatory fields ─────────────────────────────
-  runtime_name                = lower(each.value.runtime_name)
-  runtime_version             = lower(each.value.runtime_version)
-  storage_container_type      = coalesce(each.value.storage_container_type, "blobContainer")
-  storage_container_endpoint  = each.value.storage_container_endpoint
-  storage_authentication_type = coalesce(each.value.storage_authentication_type, "SystemAssignedIdentity")
-  storage_access_key          = each.value.storage_authentication_type == "StorageAccountConnectionString" ? each.value.storage_access_key : null
+  runtime_name                      = lower(each.value.runtime_name)
+  runtime_version                   = lower(each.value.runtime_version)
+  storage_container_type            = coalesce(each.value.storage_container_type, "blobContainer")
+  storage_container_endpoint        = each.value.storage_container_endpoint
+  storage_authentication_type       = coalesce(each.value.storage_authentication_type, "SystemAssignedIdentity")
+  storage_access_key                = each.value.storage_authentication_type == "StorageAccountConnectionString" ? each.value.storage_access_key : null
   storage_user_assigned_identity_id = each.value.storage_user_assigned_identity_id
 
   maximum_instance_count = each.value.maximum_instance_count
   instance_memory_in_mb  = each.value.instance_memory_in_mb
 
   # ── Classic settings (kept from original style) ────────────────
-  app_settings                        = each.value.create_new_app_insights == true && lookup(local.app_insights_map, each.value.app_insights_name, null) != null ? merge(each.value.app_settings, local.app_insights_map[each.value.app_insights_name]) : each.value.app_settings
-  tags                                = each.value.tags
-  client_certificate_enabled          = each.value.client_certificate_enabled
-  client_certificate_mode             = each.value.client_certificate_mode
-  client_certificate_exclusion_paths  = each.value.client_certificate_exclusion_paths
-  enabled                             = each.value.enabled
-  public_network_access_enabled       = each.value.public_network_access_enabled
-  virtual_network_subnet_id           = each.value.virtual_network_subnet_id
+  app_settings                                   = each.value.create_new_app_insights == true && lookup(local.app_insights_map, each.value.app_insights_name, null) != null ? merge(each.value.app_settings, local.app_insights_map[each.value.app_insights_name]) : each.value.app_settings
+  tags                                           = each.value.tags
+  client_certificate_enabled                     = each.value.client_certificate_enabled
+  client_certificate_mode                        = each.value.client_certificate_mode
+  client_certificate_exclusion_paths             = each.value.client_certificate_exclusion_paths
+  enabled                                        = each.value.enabled
+  public_network_access_enabled                  = each.value.public_network_access_enabled
+  virtual_network_subnet_id                      = each.value.virtual_network_subnet_id
   webdeploy_publish_basic_authentication_enabled = each.value.webdeploy_publish_basic_authentication_enabled
-  zip_deploy_file                     = each.value.zip_deploy_file
+  zip_deploy_file                                = each.value.zip_deploy_file
 
   # ── Identity blocks ────────────────────────────────────────────
   dynamic "identity" {

@@ -2,9 +2,9 @@ variable "flex_function_apps" {
   description = "List of Flex‑Consumption Function Apps (keeps original style)"
   type = list(object({
     # ── Core identity ─────────────────────────────────────────────────
-    name        = string
-    rg_name     = string
-    location    = string
+    name     = string
+    rg_name  = string
+    location = string
 
     # ── Plan creation ─────────────────────────────────────────────────
     create_new_app_service_plan = optional(bool, true)
@@ -14,36 +14,36 @@ variable "flex_function_apps" {
     sku_name                    = optional(string, "FC1")
 
     # ── Flex‑specific mandatory fields ───────────────────────────────
-    runtime_name                = string                 # "dotnet-isolated" | "python" | "node" | "java"
-    runtime_version             = string                 # e.g. "8.0", "3.11"
-    storage_container_type      = optional(string, "blobContainer")
+    runtime_name                      = string # "dotnet-isolated" | "python" | "node" | "java"
+    runtime_version                   = string # e.g. "8.0", "3.11"
+    storage_container_type            = optional(string, "blobContainer")
     storage_user_assigned_identity_id = optional(string)
-    storage_container_endpoint  = string                 # "https://<account>.blob.core.windows.net/<container>"
-    storage_authentication_type = optional(string, "SystemAssignedIdentity") # or "StorageAccountConnectionString"
-    storage_access_key          = optional(string)       # only when auth type is connection string
-    maximum_instance_count      = optional(number)       # default from portal (100) if omitted
-    instance_memory_in_mb       = optional(number, 2048) # must be 2048 or 4096
+    storage_container_endpoint        = string                                     # "https://<account>.blob.core.windows.net/<container>"
+    storage_authentication_type       = optional(string, "SystemAssignedIdentity") # or "StorageAccountConnectionString"
+    storage_access_key                = optional(string)                           # only when auth type is connection string
+    maximum_instance_count            = optional(number)                           # default from portal (100) if omitted
+    instance_memory_in_mb             = optional(number, 2048)                     # must be 2048 or 4096
 
-    app_settings                       = map(string)
-    tags                               = optional(map(string))
-    client_certificate_enabled         = optional(bool)
-    client_certificate_exclusion_paths = optional(string)
-    client_certificate_mode            = optional(string)
-    enabled                            = optional(bool, true)
-    content_share_force_disabled       = optional(bool)
-    identity_type                      = optional(string)
-    public_network_access_enabled      = optional(bool, true)
-    virtual_network_subnet_id          = optional(string)
+    app_settings                                   = map(string)
+    tags                                           = optional(map(string))
+    client_certificate_enabled                     = optional(bool)
+    client_certificate_exclusion_paths             = optional(string)
+    client_certificate_mode                        = optional(string)
+    enabled                                        = optional(bool, true)
+    content_share_force_disabled                   = optional(bool)
+    identity_type                                  = optional(string)
+    public_network_access_enabled                  = optional(bool, true)
+    virtual_network_subnet_id                      = optional(string)
     webdeploy_publish_basic_authentication_enabled = optional(bool, false)
-    zip_deploy_file                    = optional(string)
+    zip_deploy_file                                = optional(string)
 
-    identity_ids                 = optional(list(string))
+    identity_ids = optional(list(string))
 
     # ── Application Insights options (unchanged) ─────────────────────
-    create_new_app_insights = optional(bool, false)
-    workspace_id            = optional(string)
-    app_insights_name       = optional(string)
-    app_insights_type       = optional(string, "Web")
+    create_new_app_insights                            = optional(bool, false)
+    workspace_id                                       = optional(string)
+    app_insights_name                                  = optional(string)
+    app_insights_type                                  = optional(string, "Web")
     app_insights_daily_cap_in_gb                       = optional(number)
     app_insights_daily_data_cap_notifications_disabled = optional(bool, false)
     app_insights_internet_ingestion_enabled            = optional(bool)
