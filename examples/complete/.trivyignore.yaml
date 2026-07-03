@@ -1,0 +1,8 @@
+misconfigurations:
+  - id: AVD-AZU-0012
+    statement: >-
+      The module's created storage accounts carry no network rules by default, deliberately: the
+      flex consumption host must reach its deployment container, and restricting the account
+      without VNet integration breaks deploys and cold starts (the well-known flex locked-storage
+      gotcha). Callers with VNet topology lock it down through the storage_network_rules input,
+      which this module exposes per app.
