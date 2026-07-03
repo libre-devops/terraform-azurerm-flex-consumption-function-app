@@ -84,8 +84,9 @@ module "flex_function_app" {
       runtime_version  = "3.12"
       service_plan_key = local.plan_name
 
-      app_insights_connection_string = module.application_insights.connection_strings[local.appi_name]
-      app_insights_id                = module.application_insights.ids[local.appi_name]
+      app_insights_connection_string       = module.application_insights.connection_strings[local.appi_name]
+      app_insights_id                      = module.application_insights.ids[local.appi_name]
+      grant_app_insights_metrics_publisher = true
 
       maximum_instance_count = 40
       instance_memory_in_mb  = 2048

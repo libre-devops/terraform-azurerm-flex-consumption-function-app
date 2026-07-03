@@ -221,10 +221,11 @@ run "app_insights_wiring" {
   variables {
     function_apps = {
       "func-ai-ldo-uks-tst-01" = {
-        runtime_name                   = "python"
-        runtime_version                = "3.12"
-        app_insights_connection_string = "InstrumentationKey=00000000-0000-0000-0000-000000000000"
-        app_insights_id                = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ldo-uks-tst-001/providers/Microsoft.Insights/components/appi-ldo-uks-tst-01"
+        runtime_name                         = "python"
+        runtime_version                      = "3.12"
+        app_insights_connection_string       = "InstrumentationKey=00000000-0000-0000-0000-000000000000"
+        app_insights_id                      = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ldo-uks-tst-001/providers/Microsoft.Insights/components/appi-ldo-uks-tst-01"
+        grant_app_insights_metrics_publisher = true
       }
     }
   }

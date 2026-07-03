@@ -194,7 +194,9 @@ resource "azurerm_role_assignment" "storage" {
 
 # AAD ingestion for Application Insights when the module owns the identity and knows the AI scope.
 resource "azurerm_role_assignment" "app_insights" {
-  for_each = { for k, a in var.function_apps : k => a if a.app_insights_id != null && a.create_user_assigned_identity }
+  # Gated on the plan-known flag, never on the id itself: the id is usually a same-plan module
+  # output, and unknown values in for_each keys fail the plan.
+  for_each = { for k, a in var.function_apps : k => a if a.grant_app_insights_metrics_publisher && a.create_user_assigned_identity }
 
   scope                = each.value.app_insights_id
   role_definition_name = "Monitoring Metrics Publisher"

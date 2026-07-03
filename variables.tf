@@ -68,9 +68,12 @@ DESC
       identity_ids = optional(list(string))
     }))
 
-    # Observability.
-    app_insights_connection_string = optional(string)
-    app_insights_id                = optional(string)
+    # Observability. The grant flag exists because the AI id is usually a same-plan module output
+    # (unknown until apply), and for_each keys must stay plan-known: set it alongside
+    # app_insights_id to grant Monitoring Metrics Publisher to the module-created identity.
+    app_insights_connection_string       = optional(string)
+    app_insights_id                      = optional(string)
+    grant_app_insights_metrics_publisher = optional(bool, false)
 
     # Scale and runtime.
     maximum_instance_count = optional(number)
@@ -392,6 +395,11 @@ DESC
   validation {
     condition     = alltrue([for a in values(var.function_apps) : a.identity == null || !a.create_user_assigned_identity])
     error_message = "Set create_user_assigned_identity = false when bringing your own identity block."
+  }
+
+  validation {
+    condition     = alltrue([for a in values(var.function_apps) : !a.grant_app_insights_metrics_publisher || a.create_user_assigned_identity])
+    error_message = "grant_app_insights_metrics_publisher needs the module-created identity (create_user_assigned_identity = true); with your own identity, grant Monitoring Metrics Publisher yourself."
   }
 }
 
