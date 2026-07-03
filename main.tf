@@ -149,16 +149,19 @@ resource "azurerm_storage_account" "this" {
 
   name                              = local.storage_account_names[each.key]
   account_tier                      = "Standard"
-  account_replication_type          = "LRS"
+  account_replication_type          = each.value.storage_account_replication_type
   min_tls_version                   = "TLS1_2"
   https_traffic_only_enabled        = true
   allow_nested_items_to_be_public   = false
-  infrastructure_encryption_enabled = true
+  infrastructure_encryption_enabled = each.value.storage_infrastructure_encryption_enabled
   shared_access_key_enabled         = each.value.storage_shared_access_key_enabled
 
-  # No network rules by default, deliberately: the flex host must reach its deployment container,
-  # and locking the account down without VNet integration breaks deploys and cold starts (the
-  # well-known flex locked-storage gotcha). Callers with VNet topology restrict it here.
+  # No network rules by default, deliberately, and IP allow-listing is NOT the answer: locking the
+  # account to default Deny with the app's own possible outbound IPs allow-listed breaks BOTH the
+  # deployment service (Kudu 403s uploading the package) and the running host (503), verified
+  # live, because flex reaches its storage from platform ranges rather than the published outbound
+  # IPs. The only working lockdown is VNet integration plus service endpoints or private
+  # endpoints, which is caller topology: express it here when you have it.
   dynamic "network_rules" {
     for_each = each.value.storage_network_rules != null ? [each.value.storage_network_rules] : []
 

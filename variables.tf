@@ -42,15 +42,17 @@ DESC
     service_plan_id  = optional(string)
 
     # Storage (three shapes; see description).
-    create_storage_account            = optional(bool, true)
-    storage_account_name              = optional(string)
-    storage_account_id                = optional(string)
-    storage_container_endpoint        = optional(string)
-    storage_container_name            = optional(string, "app-packages")
-    storage_shared_access_key_enabled = optional(bool, false)
-    storage_authentication_type       = optional(string)
-    storage_access_key                = optional(string)
-    storage_role_names                = optional(list(string), ["Storage Blob Data Owner", "Storage Blob Data Contributor", "Storage Queue Data Contributor", "Storage Table Data Contributor"])
+    create_storage_account                    = optional(bool, true)
+    storage_account_name                      = optional(string)
+    storage_account_id                        = optional(string)
+    storage_container_endpoint                = optional(string)
+    storage_container_name                    = optional(string, "app-packages")
+    storage_shared_access_key_enabled         = optional(bool, false)
+    storage_infrastructure_encryption_enabled = optional(bool, true)
+    storage_authentication_type               = optional(string)
+    storage_access_key                        = optional(string)
+    storage_role_names                        = optional(list(string), ["Storage Blob Data Owner", "Storage Blob Data Contributor", "Storage Queue Data Contributor", "Storage Table Data Contributor"])
+    storage_account_replication_type          = optional(string, "LRS")
     storage_network_rules = optional(object({
       default_action             = string
       bypass                     = optional(list(string), ["AzureServices"])

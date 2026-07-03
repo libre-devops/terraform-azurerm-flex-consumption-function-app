@@ -29,6 +29,11 @@ output "identity_principal_ids" {
   }
 }
 
+output "possible_outbound_ip_address_lists" {
+  description = "Map of app name to the app's possible outbound IPs: the allow-list for locking the backing storage down after create (see the complete example)."
+  value       = { for k, a in azurerm_function_app_flex_consumption.this : k => a.possible_outbound_ip_address_list }
+}
+
 output "service_plan_ids" {
   description = "Map of plan key (from service_plans plus the dedicated asp-<app> plans) to its id."
   value = merge(

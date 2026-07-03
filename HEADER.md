@@ -120,7 +120,9 @@ auditable.
 
 | ID | Scope | Reason |
 | --- | --- | --- |
-| AVD-AZU-0012 (storage network rules) | module-created storage accounts | The flex consumption host must reach its deployment container, and restricting the account without VNet integration breaks deploys and cold starts (the well-known flex locked-storage gotcha); callers with VNet topology lock it down via the per-app `storage_network_rules` input. |
+| AVD-AZU-0012 (storage network rules) | module-created storage accounts | Not fixable with IP rules, proven live: default-Deny with the app's own possible outbound IPs allow-listed 403s the deployment service and 503s the running host, because flex reaches storage from platform ranges. The working lockdown is VNet integration plus service or private endpoints, expressed through the per-app `storage_network_rules` input. |
+| AVD-AZU-0060 (customer-managed keys) | module-created storage accounts | Deliberate non-goal for deployment package storage; platform-managed keys plus default infrastructure (double) encryption are the accepted posture. |
+| AVD-AZU-0057 (storage analytics logging) | module-created storage accounts | Superseded by diagnostic settings, which belong to the caller's observability topology (the diagnostic-settings module). |
 
 ## Reference
 
