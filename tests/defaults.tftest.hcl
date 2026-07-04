@@ -72,6 +72,11 @@ run "fast_to_get_going" {
   }
 
   assert {
+    condition     = azurerm_function_app_flex_consumption.this["func-app-ldo-uks-tst-01"].app_settings["AzureWebJobsStorage"] == ""
+    error_message = "The bare AzureWebJobsStorage setting should be pinned empty on keyless apps (provider #29149 re-injects a key-based string that breaks the host key APIs)."
+  }
+
+  assert {
     condition     = azurerm_function_app_flex_consumption.this["func-app-ldo-uks-tst-01"].https_only == true
     error_message = "https_only should default true (the provider default is false)."
   }
@@ -181,7 +186,7 @@ run "raw_endpoint_escape_hatch" {
   }
 
   assert {
-    condition     = !contains(keys(azurerm_function_app_flex_consumption.this["func-raw-ldo-uks-tst-01"].app_settings), "AzureWebJobsStorage__accountName")
+    condition     = !contains(keys(azurerm_function_app_flex_consumption.this["func-raw-ldo-uks-tst-01"].app_settings), "AzureWebJobsStorage__accountName") && !contains(keys(azurerm_function_app_flex_consumption.this["func-raw-ldo-uks-tst-01"].app_settings), "AzureWebJobsStorage")
     error_message = "No host storage settings should be wired for the raw endpoint shape."
   }
 }

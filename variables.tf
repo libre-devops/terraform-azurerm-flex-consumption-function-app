@@ -12,12 +12,13 @@ own), or neither (dedicated FC1 plan created).
 STORAGE, three shapes: created (default), bring-your-own account via storage_account_id (the
 module still builds the container and can still grant roles because it has the scope), or the raw
 storage_container_endpoint escape hatch (no grants, caller owns all wiring).
-storage_shared_access_key_enabled defaults FALSE (keyless): deploys and runtime work with
-identity auth, with one documented limitation: the host and function keys API is unavailable, so
-keyless apps should use anonymous or AAD (Easy Auth) trigger auth; set it true if you need
-function-key auth. When keyless identity auth is active the module wires
-AzureWebJobsStorage__accountName/__credential/__clientId automatically
-(wire_host_storage_settings = false to opt out).
+storage_shared_access_key_enabled defaults FALSE (keyless): deploys, runtime, the host and
+function key APIs, and the portal blades all work with identity auth. When keyless identity auth
+is active the module wires AzureWebJobsStorage__accountName/__credential/__clientId automatically
+and pins the bare AzureWebJobsStorage setting to an empty string, because the provider re-injects
+a key-based connection string even in identity mode (upstream #29149) and that poisoned setting
+breaks the host's secret manager (and with it every key API and portal blade). Set
+wire_host_storage_settings = false to opt out of all of it.
 
 IDENTITY: the module creates a user-assigned identity per app by default
 (create_user_assigned_identity), because system-assigned plus deploy-during-create is a bootstrap

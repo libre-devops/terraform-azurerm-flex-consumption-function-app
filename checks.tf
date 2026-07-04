@@ -7,12 +7,12 @@
 check "zip_deploy_file_is_broken_upstream" {
   assert {
     condition     = alltrue([for a in values(var.function_apps) : a.zip_deploy_file == null])
-    error_message = "zip_deploy_file is broken upstream for flex consumption apps (the publish poll 404s); use deploy_package, which drives the ARM one-deploy extension directly."
+    error_message = "zip_deploy_file is broken upstream for flex consumption apps (the publish poll 404s); push the package from outside the resource instead (az functionapp deployment source config-zip, see the complete example and the repo README)."
   }
 }
 
-# Keyless storage disables the host and function keys API: function-key trigger auth cannot work.
-# Apps that keep keys off should authenticate triggers anonymously or with Easy Auth.
+# A keyless storage account cannot serve a key-based connection string, so connection-string
+# storage auth on a keyless app fails at runtime; keep the identity default or flip keys on.
 check "keyless_apps_use_identity_auth" {
   assert {
     condition = alltrue([

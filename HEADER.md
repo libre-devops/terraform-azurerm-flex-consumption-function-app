@@ -36,9 +36,16 @@ matters: every one of those defaults has an explicit override.
 - **Keyless by default, correctly.** `shared_access_key_enabled = false` with the complete
   documented recipe: Storage Blob Data Owner (the host's secrets store) plus Blob, Queue, and
   Table Contributor for the identity, and `AzureWebJobsStorage__accountName` /
-  `__credential = managedidentity` / `__clientId` app settings. One documented limitation,
-  verified live: the host and function keys API is unavailable keyless, so use anonymous or AAD
-  (Easy Auth) trigger auth, or flip keys on (the connection-string opt-out is first class).
+  `__credential = managedidentity` / `__clientId` app settings. The module also pins the bare
+  `AzureWebJobsStorage` setting to an empty string, because the provider re-injects a key-based
+  connection string even in identity mode
+  ([#29149](https://github.com/hashicorp/terraform-provider-azurerm/issues/29149)); with shared
+  keys disabled that poisoned setting breaks the host's secret manager, so every host and
+  function key API, and every portal blade built on them (the Functions list, Test/Run, App
+  keys), returns InternalServerError. With the poison neutralized the host stores its secrets
+  through the identity, the key APIs serve, and the portal works, all verified live on a keyless
+  app. (The `az` CLI still prints a harmless `Failed to fetch host key` warning during deploys;
+  judge deploys by the endpoint answering, not the CLI's exit chatter.)
 - **Plans as a map, not a straitjacket.** Multiple apps can share a plan, `sku_name` is not
   welded to FC1, and `app_service_environment_id` is there for ASE placement. Apps that reference
   no plan get a dedicated FC1 plan automatically.
