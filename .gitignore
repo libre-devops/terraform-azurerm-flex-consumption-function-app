@@ -32,3 +32,6 @@ override.tf.json
 # The examples commit their .terraform.lock.hcl (they are root configs). The module root lock is
 # not used by consumers, so ignore only that one.
 /.terraform.lock.hcl
+
+# Local portal debugging scratch stack, applied from a workstation with local state.
+examples/portal-probe/
