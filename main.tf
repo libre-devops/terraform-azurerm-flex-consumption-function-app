@@ -18,20 +18,25 @@ locals {
   # (system-assigned plus deploy-during-create is a bootstrap deadlock), or caller-supplied.
   uai_apps = { for k, a in var.function_apps : k => a if a.create_user_assigned_identity }
 
+  # Null means no identity at all (keys-on apps that want none: create_user_assigned_identity
+  # false with no identity block); the resource's identity block is dynamic on this.
   identity_blocks = {
     for k, a in var.function_apps : k => (
-      a.identity != null ? a.identity : {
+      a.identity != null ? a.identity :
+      a.create_user_assigned_identity ? {
         type         = "SystemAssigned, UserAssigned"
         identity_ids = [azurerm_user_assigned_identity.this[k].id]
-      }
+      } : null
     )
   }
 
-  # Storage auth derivation: explicit wins; else UAI when one is wired, else system-assigned.
+  # Storage auth derivation: explicit wins; else UAI when one is wired, else system-assigned when
+  # any identity exists, else connection string (an identity-less app has nothing else to auth with).
   storage_auth = {
     for k, a in var.function_apps : k => coalesce(
       a.storage_authentication_type,
-      a.create_user_assigned_identity || try(a.identity.identity_ids, null) != null ? "UserAssignedIdentity" : "SystemAssignedIdentity"
+      a.create_user_assigned_identity || try(a.identity.identity_ids, null) != null ? "UserAssignedIdentity" :
+      a.identity != null ? "SystemAssignedIdentity" : "StorageAccountConnectionString"
     )
   }
 
@@ -252,9 +257,13 @@ resource "azurerm_function_app_flex_consumption" "this" {
   # kept for when it is fixed. Use deploy_package for the working one-deploy path.
   zip_deploy_file = each.value.zip_deploy_file
 
-  identity {
-    type         = local.identity_blocks[each.key].type
-    identity_ids = try(local.identity_blocks[each.key].identity_ids, null)
+  dynamic "identity" {
+    for_each = local.identity_blocks[each.key] != null ? [local.identity_blocks[each.key]] : []
+
+    content {
+      type         = identity.value.type
+      identity_ids = try(identity.value.identity_ids, null)
+    }
   }
 
   dynamic "always_ready" {

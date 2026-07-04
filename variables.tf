@@ -21,9 +21,12 @@ breaks the host's secret manager (and with it every key API and portal blade). S
 wire_host_storage_settings = false to opt out of all of it.
 
 IDENTITY: the module creates a user-assigned identity per app by default
-(create_user_assigned_identity), because system-assigned plus deploy-during-create is a bootstrap
-deadlock (the grant needs the principal id, the deploy needs the grant). Pass identity to bring
-your own (the module then grants nothing on storage: the identity owner does).
+(create_user_assigned_identity), attached as "SystemAssigned, UserAssigned" so both kinds are
+live, because system-assigned plus deploy-during-create is a bootstrap deadlock (the grant needs
+the principal id, the deploy needs the grant). Pass identity to bring your own of any type
+(the module then grants nothing on storage: the identity owner does). Set
+create_user_assigned_identity = false with no identity block for an identity-less app: storage
+auth then derives to StorageAccountConnectionString, which needs keys on.
 
 DEPLOY: push the package from outside the resource with one-deploy (see the complete example:
 archive_file plus az functionapp deployment source config-zip keyed on the package hash). The

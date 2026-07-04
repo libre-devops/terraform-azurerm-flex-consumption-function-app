@@ -219,6 +219,43 @@ run "connection_string_auth" {
   }
 }
 
+# An identity-less app: keys-on with no identity block at all. Storage auth derives to
+# connection string and the resource carries no identity.
+run "no_identity_at_all" {
+  command = apply
+
+  variables {
+    function_apps = {
+      "func-noid-ldo-uks-tst-01" = {
+        runtime_name                      = "python"
+        runtime_version                   = "3.12"
+        storage_shared_access_key_enabled = true
+        create_user_assigned_identity     = false
+      }
+    }
+  }
+
+  assert {
+    condition     = length(azurerm_function_app_flex_consumption.this["func-noid-ldo-uks-tst-01"].identity) == 0
+    error_message = "No identity block should be present when none is created or brought."
+  }
+
+  assert {
+    condition     = azurerm_function_app_flex_consumption.this["func-noid-ldo-uks-tst-01"].storage_authentication_type == "StorageAccountConnectionString"
+    error_message = "Storage auth should derive to connection string for an identity-less app."
+  }
+
+  assert {
+    condition     = !contains(keys(azurerm_function_app_flex_consumption.this["func-noid-ldo-uks-tst-01"].app_settings), "AzureWebJobsStorage__accountName")
+    error_message = "No identity host storage settings should be wired without an identity."
+  }
+
+  assert {
+    condition     = length(azurerm_user_assigned_identity.this) == 0
+    error_message = "No user assigned identity should be created."
+  }
+}
+
 # App Insights wiring: the connection string setting plus the AAD ingestion auth string and grant.
 run "app_insights_wiring" {
   command = apply
