@@ -149,7 +149,15 @@ jobs:
 
             (cd "$src" && zip -q -r "$pkg" .)
             echo "== ${app}: pushing $(du -h "$pkg" | cut -f1) package"
-            az functionapp deployment source config-zip --resource-group "$rg" --name "$app" --src "$pkg" || true
+            # The push retries on its own (three attempts, spaced), separately from the curl gate:
+            # a transient SCM hiccup should cost seconds, not the whole verification budget. The
+            # CLI's exit code is untrustworthy either way (its keyless host-key health check
+            # errors even on landed deploys), so success is only ever judged by the curls below.
+            for attempt in 1 2 3; do
+              echo "== ${app}: push attempt ${attempt}"
+              az functionapp deployment source config-zip --resource-group "$rg" --name "$app" --src "$pkg" && break
+              [ "$attempt" = "3" ] || sleep 20
+            done || true
 
             for i in $(seq 1 20); do
               code=$(curl -s -o /dev/null -w '%{http_code}' "https://${app}.azurewebsites.net${path}")
