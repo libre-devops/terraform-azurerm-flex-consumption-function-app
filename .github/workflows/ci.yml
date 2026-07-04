@@ -75,18 +75,20 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: "1"
 
-  # Live apply-then-destroy of an example via the terraform-azure action. Runs only on a manual
-  # dispatch, since it needs the org OIDC variables, the firewalled state account, and the org
-  # secrets that the tenant bootstrap publishes. Trigger with: gh workflow run ci.yml
-  self-test:
-    name: Self-test (plan, apply, destroy)
+  # This repo's live self-test differs from the rest of the estate, on purpose: flex consumption
+  # cannot be code-deployed from inside a Terraform apply (tokens minted at job start expire
+  # before the apply finishes, Terraform cannot POST binary bodies, and the ARM pull path cannot
+  # be keyless), so the pipeline is staged: apply ALL the infrastructure in one pass, deploy the
+  # function packages in a dependent stage with a FRESH OIDC login, verify the endpoints answer,
+  # then destroy. The keyless stack proves total automated keyless deployment; the
+  # offline-package stack proves the vendored-wheels build (build where the internet is, deploy
+  # with nothing to build server-side). Trigger with: gh workflow run ci.yml
+  self-test-apply:
+    name: Self-test 1 - apply the stacks
     if: ${{ github.event_name == 'workflow_dispatch' }}
     needs: validate
     runs-on: ubuntu-latest
     env:
-      # GitHub-hosted runners egress from US regions. SecurityInsights reads-after-writes against a
-      # cross-ocean region intermittently hit a replica that has not seen the write yet ("Root
-      # object was present, but now absent"), so the disposable self-test stack deploys runner-adjacent.
       TF_VAR_loc: eus
     permissions:
       id-token: write
@@ -98,7 +100,7 @@ jobs:
         uses: libre-devops/terraform-azure@v1
         with:
           terraform-code-location: examples
-          terraform-stack-to-run-json: '["minimal","complete"]'
+          terraform-stack-to-run-json: '["minimal","complete","keyless","offline-package","powershell"]'
           run-terraform-plan: true
           run-terraform-apply: true
           arm-client-id: ${{ vars.AZURE_CLIENT_ID }}
@@ -108,15 +110,82 @@ jobs:
           firewall-storage-resource-group: ${{ secrets.TFSTATE_RESOURCE_GROUP }}
           terraform-init-extra-args-json: '["-reconfigure","-upgrade","-backend-config=resource_group_name=${{ secrets.TFSTATE_RESOURCE_GROUP }}","-backend-config=storage_account_name=${{ secrets.TFSTATE_STORAGE_ACCOUNT }}","-backend-config=container_name=${{ secrets.TFSTATE_BLOB_CONTAINER }}"]'
 
-      # Runs even when the apply failed: destroying whatever landed in state is the cost-control
-      # backstop, and for Sentinel it is the only clean offboarding path (deleting the resource
-      # group out-of-band leaves onboarding residue that poisons the next same-name workspace).
+  self-test-deploy:
+    name: Self-test 2 - deploy and verify the functions
+    needs: self-test-apply
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      # The whole reason this stage exists: a fresh OIDC login whose token has its full lifetime
+      # ahead of it, unlike anything minted before a long apply.
+      - name: Azure login (fresh OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy and verify each function app
+        shell: bash
+        run: |
+          set -euo pipefail
+          loc="eus"
+          ws="dev"
+
+          deploy_and_verify() {
+            local rg="$1" app="$2" src="$3" path="$4" vendored="$5"
+            local pkg
+            pkg="$(mktemp -d)/app.zip"
+
+            if [ "$vendored" = "true" ]; then
+              # Build where the internet is: vendor the dependencies into the package layout the
+              # Functions host loads, so nothing is built (or downloaded) server-side.
+              pip install --quiet --target "${src}/.python_packages/lib/site-packages" -r "${src}/requirements.txt"
+            fi
+
+            (cd "$src" && zip -q -r "$pkg" .)
+            echo "== ${app}: pushing $(du -h "$pkg" | cut -f1) package"
+            az functionapp deployment source config-zip --resource-group "$rg" --name "$app" --src "$pkg" || true
+
+            for i in $(seq 1 20); do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "https://${app}.azurewebsites.net${path}")
+              echo "== ${app}: attempt ${i}: HTTP ${code}"
+              [ "$code" = "200" ] && return 0
+              sleep 15
+            done
+            echo "== ${app}: endpoint never answered"
+            return 1
+          }
+
+          deploy_and_verify "rg-ldo-${loc}-${ws}-002" "func-api-ldo-${loc}-${ws}-002" "examples/complete/app"        "/api/hello"      false
+          deploy_and_verify "rg-ldo-${loc}-${ws}-003" "func-kl-ldo-${loc}-${ws}-003"  "examples/keyless/app"         "/api/hello"      false
+          deploy_and_verify "rg-ldo-${loc}-${ws}-004" "func-off-ldo-${loc}-${ws}-004" "examples/offline-package/app" "/api/hello"      true
+          deploy_and_verify "rg-ldo-${loc}-${ws}-005" "func-ps-ldo-${loc}-${ws}-005"  "examples/powershell/app"      "/api/HttpTrigger" false
+
+  self-test-destroy:
+    name: Self-test 3 - destroy the stacks
+    # Runs even when apply or deploy failed: destroying whatever landed in state is the
+    # cost-control backstop.
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.self-test-apply.result != 'skipped' }}
+    needs: [self-test-apply, self-test-deploy]
+    runs-on: ubuntu-latest
+    env:
+      TF_VAR_loc: eus
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Plan-destroy and destroy the example stacks
-        if: ${{ always() }}
         uses: libre-devops/terraform-azure@v1
         with:
           terraform-code-location: examples
-          terraform-stack-to-run-json: '["minimal","complete"]'
+          terraform-stack-to-run-json: '["minimal","complete","keyless","offline-package","powershell"]'
           run-terraform-plan: false
           run-terraform-plan-destroy: true
           run-terraform-destroy: true

@@ -90,9 +90,18 @@ module "flex_function_app" {
 
 - [`examples/minimal`](./examples/minimal) - one entry, nothing but a runtime: the whole secure
   stack arrives by default.
-- [`examples/complete`](./examples/complete) - a shared plan hosting two apps (keyless identity
-  auth and the keys-on opt-out side by side), Application Insights with AAD ingestion, and a
-  local FastAPI package built and pushed by Terraform, verified live by curling the endpoint.
+- [`examples/complete`](./examples/complete) - the full infrastructure surface: a shared plan
+  hosting two apps (keyless identity auth and the keys-on opt-out side by side), Application
+  Insights with AAD ingestion, scale tuning, and site_config; its FastAPI package deploys in the
+  pipeline's deploy stage.
+- [`examples/keyless`](./examples/keyless) - the total-automated-keyless-deployment showcase: no
+  keys, no SAS, anywhere.
+- [`examples/offline-package`](./examples/offline-package) - the vendored-wheels pattern for
+  egress-blocked apps: pip installs into `.python_packages/lib/site-packages` on the runner, the
+  package ships byte-identical, nothing builds server-side.
+- [`examples/powershell`](./examples/powershell) - the PowerShell worker on the same secure stack
+  (`run.ps1` + `function.json`, no build step, an empty `requirements.psd1` so the app needs no
+  gallery access at runtime).
 
 ## Developing
 

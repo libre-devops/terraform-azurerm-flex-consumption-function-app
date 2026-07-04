@@ -10,9 +10,3 @@ provider "azurerm" {
   storage_use_azuread = true
   use_oidc            = true
 }
-
-# azapi drives the one-deploy action; it authenticates exactly like azurerm (OIDC in CI, az CLI
-# locally) and its tokens stay fresh for the whole apply.
-provider "azapi" {
-  use_oidc = true
-}

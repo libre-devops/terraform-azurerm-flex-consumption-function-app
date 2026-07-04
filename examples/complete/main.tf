@@ -1,9 +1,9 @@
-# Every feature of the module, plus the thing everyone actually wants to see: a real FastAPI
-# hello world packaged locally and pushed to the app. The push happens OUTSIDE the app resource
-# with one-deploy (az functionapp deployment source config-zip), keyed on the package hash so
-# code changes redeploy: the azurerm zip_deploy_file publish path is broken upstream for flex,
-# and an ARM-native pull deploy cannot work against keyless storage (one-deploy fetches
-# packageUri anonymously; verified live). Applied then destroyed in one CI run.
+# Every feature of the module's INFRASTRUCTURE surface: a shared plan hosting two apps (keyless
+# identity auth and the keys-on opt-out side by side), Application Insights with AAD ingestion,
+# scale tuning, and site_config. Code deployment deliberately does NOT happen in this apply: this
+# repo's CI deploys the app/ package in a dedicated stage with a fresh login (see the repo README,
+# "A different workflow, on purpose"), because tokens expire mid-apply and the ARM pull path
+# cannot be keyless. Applied then destroyed in one CI run.
 locals {
   location  = lookup(var.regions, var.loc, "uksouth")
   rg_name   = "rg-${var.short}-${var.loc}-${terraform.workspace}-002"

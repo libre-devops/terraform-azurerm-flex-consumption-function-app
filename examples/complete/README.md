@@ -26,12 +26,12 @@ pushed with one-deploy, verified live by curling the endpoint until it answers. 
 ## Example configuration
 
 ```hcl
-# Every feature of the module, plus the thing everyone actually wants to see: a real FastAPI
-# hello world packaged locally and pushed to the app. The push happens OUTSIDE the app resource
-# with one-deploy (az functionapp deployment source config-zip), keyed on the package hash so
-# code changes redeploy: the azurerm zip_deploy_file publish path is broken upstream for flex,
-# and an ARM-native pull deploy cannot work against keyless storage (one-deploy fetches
-# packageUri anonymously; verified live). Applied then destroyed in one CI run.
+# Every feature of the module's INFRASTRUCTURE surface: a shared plan hosting two apps (keyless
+# identity auth and the keys-on opt-out side by side), Application Insights with AAD ingestion,
+# scale tuning, and site_config. Code deployment deliberately does NOT happen in this apply: this
+# repo's CI deploys the app/ package in a dedicated stage with a fresh login (see the repo README,
+# "A different workflow, on purpose"), because tokens expire mid-apply and the ARM pull path
+# cannot be keyless. Applied then destroyed in one CI run.
 locals {
   location  = lookup(var.regions, var.loc, "uksouth")
   rg_name   = "rg-${var.short}-${var.loc}-${terraform.workspace}-002"
@@ -191,9 +191,7 @@ resource "terraform_data" "deploy_api" {
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.9.0, < 2.0.0 |
 | <a name="requirement_archive"></a> [archive](#requirement\_archive) | >= 2.0.0, < 3.0.0 |
-| <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) | >= 2.0.0, < 3.0.0 |
 | <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | >= 4.0.0, < 5.0.0 |
-| <a name="requirement_time"></a> [time](#requirement\_time) | >= 0.9.0, < 1.0.0 |
 
 ## Providers
 
@@ -233,7 +231,7 @@ resource "terraform_data" "deploy_api" {
 
 | Name | Description |
 |------|-------------|
-| <a name="output_api_url"></a> [api\_url](#output\_api\_url) | The FastAPI hello world endpoint, live after the deploy. |
+| <a name="output_api_url"></a> [api\_url](#output\_api\_url) | The FastAPI hello world endpoint, live once the pipeline's deploy stage has pushed the app/ package. |
 | <a name="output_function_app_ids_zipmap"></a> [function\_app\_ids\_zipmap](#output\_function\_app\_ids\_zipmap) | Map of app name to { name, id }. |
 | <a name="output_identity_principal_ids"></a> [identity\_principal\_ids](#output\_identity\_principal\_ids) | Per-app identity principal ids. |
 | <a name="output_service_plan_ids"></a> [service\_plan\_ids](#output\_service\_plan\_ids) | Map of plan key to id (the shared plan from the map). |

@@ -1,5 +1,5 @@
 output "api_url" {
-  description = "The FastAPI hello world endpoint, live after the deploy."
+  description = "The FastAPI hello world endpoint, live once the pipeline's deploy stage has pushed the app/ package."
   value       = "https://${module.flex_function_app.default_hostnames[local.api_name]}/api/hello"
 }
 
