@@ -153,36 +153,7 @@ module "flex_function_app" {
   }
 }
 
-# The local package: the app/ directory (FastAPI + host.json + requirements.txt) zipped by
-# Terraform. Flex builds Python dependencies server-side on deploy, so the zip carries source
-# only, no vendored site-packages.
-data "archive_file" "api_package" {
-  type        = "zip"
-  source_dir  = "${path.module}/app"
-  output_path = "${path.module}/app.zip"
-}
 
-# The push: one-deploy via the az CLI, re-run whenever the package hash or the app changes. This
-# is the working deploy path for flex today (see the module README for why the in-resource one is
-# not), and the CI runner is already logged in via OIDC.
-resource "terraform_data" "deploy_api" {
-  triggers_replace = [
-    data.archive_file.api_package.output_md5,
-    module.flex_function_app.function_app_ids[local.api_name],
-  ]
-
-  # az exits nonzero on its post-deploy host-key health check under keyless storage even when
-  # the deploy lands, so the deploy is failure-tolerant and the real verification is the curl
-  # below: the run only passes when FastAPI actually answers.
-  provisioner "local-exec" {
-    command = "az functionapp deployment source config-zip --resource-group ${local.rg_name} --name ${local.api_name} --src ${data.archive_file.api_package.output_path} || true"
-  }
-
-  provisioner "local-exec" {
-    command     = "for i in $(seq 1 20); do code=$(curl -s -o /dev/null -w '%%{http_code}' https://${module.flex_function_app.default_hostnames[local.api_name]}/api/hello); echo \"attempt $i: HTTP $code\"; [ \"$code\" = \"200\" ] && exit 0; sleep 15; done; echo 'FastAPI endpoint never answered'; exit 1"
-    interpreter = ["/bin/bash", "-c"]
-  }
-}
 ```
 
 ## Requirements
@@ -190,15 +161,11 @@ resource "terraform_data" "deploy_api" {
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.9.0, < 2.0.0 |
-| <a name="requirement_archive"></a> [archive](#requirement\_archive) | >= 2.0.0, < 3.0.0 |
 | <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | >= 4.0.0, < 5.0.0 |
 
 ## Providers
 
-| Name | Version |
-|------|---------|
-| <a name="provider_archive"></a> [archive](#provider\_archive) | >= 2.0.0, < 3.0.0 |
-| <a name="provider_terraform"></a> [terraform](#provider\_terraform) | n/a |
+No providers.
 
 ## Modules
 
@@ -212,10 +179,7 @@ resource "terraform_data" "deploy_api" {
 
 ## Resources
 
-| Name | Type |
-|------|------|
-| [terraform_data.deploy_api](https://registry.terraform.io/providers/hashicorp/terraform/latest/docs/resources/data) | resource |
-| [archive_file.api_package](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
+No resources.
 
 ## Inputs
 
