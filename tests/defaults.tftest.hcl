@@ -72,8 +72,11 @@ run "fast_to_get_going" {
   }
 
   assert {
-    condition     = azurerm_function_app_flex_consumption.this["func-app-ldo-uks-tst-01"].app_settings["AzureWebJobsStorage"] == ""
-    error_message = "The bare AzureWebJobsStorage setting should be pinned empty on keyless apps (provider #29149 re-injects a key-based string that breaks the host key APIs)."
+    condition = (
+      azurerm_function_app_flex_consumption.this["func-app-ldo-uks-tst-01"].app_settings["AZUREWEBJOBSSTORAGE"] == "" &&
+      !contains(keys(azurerm_function_app_flex_consumption.this["func-app-ldo-uks-tst-01"].app_settings), "AzureWebJobsStorage")
+    )
+    error_message = "The bare host storage setting should be pinned empty on keyless apps (provider #29149 re-injects a key-based string that breaks the host key APIs), spelt AZUREWEBJOBSSTORAGE, because the provider moves an exact AzureWebJobsStorage out of app_settings on every read."
   }
 
   assert {
@@ -186,7 +189,7 @@ run "raw_endpoint_escape_hatch" {
   }
 
   assert {
-    condition     = !contains(keys(azurerm_function_app_flex_consumption.this["func-raw-ldo-uks-tst-01"].app_settings), "AzureWebJobsStorage__accountName") && !contains(keys(azurerm_function_app_flex_consumption.this["func-raw-ldo-uks-tst-01"].app_settings), "AzureWebJobsStorage")
+    condition     = length([for s in keys(azurerm_function_app_flex_consumption.this["func-raw-ldo-uks-tst-01"].app_settings) : s if startswith(lower(s), "azurewebjobsstorage")]) == 0
     error_message = "No host storage settings should be wired for the raw endpoint shape."
   }
 }
@@ -253,6 +256,34 @@ run "no_identity_at_all" {
   assert {
     condition     = length(azurerm_user_assigned_identity.this) == 0
     error_message = "No user assigned identity should be created."
+  }
+}
+
+# A caller's own host storage setting, in any case, replaces the module's: the provider matches
+# names without regard to case, so with both in app_settings which one Azure got would be chance.
+run "caller_host_storage_setting_wins" {
+  command = apply
+
+  variables {
+    function_apps = {
+      "func-own-ldo-uks-tst-01" = {
+        runtime_name    = "python"
+        runtime_version = "3.12"
+        app_settings = {
+          AzureWebJobsStorage           = "@Microsoft.KeyVault(SecretUri=https://kv-mock.vault.azure.net/secrets/host)"
+          azurewebjobsstorage__clientid = "00000000-0000-0000-0000-00000000cccc"
+        }
+      }
+    }
+  }
+
+  assert {
+    condition = (
+      jsonencode(sort([for s in keys(azurerm_function_app_flex_consumption.this["func-own-ldo-uks-tst-01"].app_settings) : s if startswith(lower(s), "azurewebjobsstorage")])) ==
+      jsonencode(sort(["AzureWebJobsStorage", "AzureWebJobsStorage__accountName", "AzureWebJobsStorage__credential", "azurewebjobsstorage__clientid"])) &&
+      startswith(azurerm_function_app_flex_consumption.this["func-own-ldo-uks-tst-01"].app_settings["AzureWebJobsStorage"], "@Microsoft.KeyVault(")
+    )
+    error_message = "A caller's setting should replace the module's of the same name in any case, leaving the module's others."
   }
 }
 
