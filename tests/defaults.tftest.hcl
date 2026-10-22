@@ -256,7 +256,8 @@ run "no_identity_at_all" {
   }
 }
 
-# App Insights wiring: the connection string setting plus the AAD ingestion auth string and grant.
+# App Insights wiring: the connection string in site_config (never an app setting, which the provider
+# reads back into site_config and so differs on every plan), the AAD ingestion auth string and grant.
 run "app_insights_wiring" {
   command = apply
 
@@ -275,6 +276,14 @@ run "app_insights_wiring" {
   assert {
     condition     = startswith(azurerm_function_app_flex_consumption.this["func-ai-ldo-uks-tst-01"].app_settings["APPLICATIONINSIGHTS_AUTHENTICATION_STRING"], "ClientId=")
     error_message = "The AAD ingestion auth string should be wired with the module UAI."
+  }
+
+  assert {
+    condition = (
+      azurerm_function_app_flex_consumption.this["func-ai-ldo-uks-tst-01"].site_config[0].application_insights_connection_string == "InstrumentationKey=00000000-0000-0000-0000-000000000000" &&
+      !contains(keys(azurerm_function_app_flex_consumption.this["func-ai-ldo-uks-tst-01"].app_settings), "APPLICATIONINSIGHTS_CONNECTION_STRING")
+    )
+    error_message = "The connection string should be in site_config, not an app setting."
   }
 
   assert {
