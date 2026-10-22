@@ -76,16 +76,20 @@ locals {
 
   # The documented keyless recipe: identity-based host storage app settings, wired whenever the
   # app authenticates to storage with an identity (opt out via wire_host_storage_settings).
-  # AzureWebJobsStorage is pinned to an empty string on purpose: the provider re-injects a
-  # key-based connection string even in identity mode (hashicorp/terraform-provider-azurerm
+  # The bare host storage setting is pinned to an empty string on purpose: the provider re-injects
+  # a key-based connection string even in identity mode (hashicorp/terraform-provider-azurerm
   # #29149), and with shared keys disabled that poisoned setting breaks the host's secret
   # manager, so every host/function key API (and the portal blades built on them) returns
   # InternalServerError. Owning the setting as "" makes the host fall back to the identity
-  # trio for secret storage too, which the module's Blob Data Owner grant covers.
+  # trio for secret storage too, which the module's Blob Data Owner grant covers. It is spelt
+  # AZUREWEBJOBSSTORAGE because the provider matches a user setting to the one it injects without
+  # regard to case, so this still replaces it, but on every read it moves an exact
+  # "AzureWebJobsStorage" out of app_settings, which showed the empty value as a change on every
+  # plan.
   host_storage_settings = {
     for k, a in var.function_apps : k => (
       a.wire_host_storage_settings && local.storage_auth[k] != "StorageAccountConnectionString" && a.storage_container_endpoint == null ? {
-        AzureWebJobsStorage              = ""
+        AZUREWEBJOBSSTORAGE              = ""
         AzureWebJobsStorage__accountName = a.create_storage_account ? azurerm_storage_account.this[k].name : provider::azurerm::parse_resource_id(a.storage_account_id).resource_name
         AzureWebJobsStorage__credential  = "managedidentity"
         AzureWebJobsStorage__clientId    = a.create_user_assigned_identity ? azurerm_user_assigned_identity.this[k].client_id : null
@@ -104,9 +108,11 @@ locals {
     )
   }
 
+  # A caller's setting replaces the module's of the same name in any case, as the provider matches
+  # names without regard to case: with both, which one Azure got would be down to map order.
   effective_app_settings = {
     for k, a in var.function_apps : k => merge(
-      { for s, v in local.host_storage_settings[k] : s => v if v != null },
+      { for s, v in local.host_storage_settings[k] : s => v if v != null && !contains([for c in keys(a.app_settings) : lower(c)], lower(s)) },
       local.app_insights_settings[k],
       a.app_settings,
     )
