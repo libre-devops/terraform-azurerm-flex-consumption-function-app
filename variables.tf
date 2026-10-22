@@ -33,9 +33,12 @@ archive_file plus az functionapp deployment source config-zip keyed on the packa
 azurerm zip_deploy_file publish path is broken upstream for flex and stays as a passthrough; an
 ARM-native pull deploy cannot work keyless because one-deploy fetches packageUri anonymously.
 
-APP INSIGHTS: pass app_insights_connection_string to wire the app setting; with an app_insights_id
-and a module-created identity the AAD ingestion auth string and Monitoring Metrics Publisher
-grant are wired too.
+APP INSIGHTS: pass app_insights_connection_string to wire the connection string (into
+site_config.application_insights_connection_string, where the provider reads it back; an
+APPLICATIONINSIGHTS_CONNECTION_STRING app setting is moved there on every read and shows as a
+change on every plan, so do not set one); with an app_insights_id and a module-created identity
+the AAD ingestion auth string and Monitoring Metrics Publisher grant are wired too. A
+site_config.application_insights_connection_string you set yourself wins.
 DESC
 
   type = map(object({

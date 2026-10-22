@@ -93,9 +93,11 @@ locals {
     )
   }
 
+  # The connection string itself goes in site_config (below), not here: the provider reads an
+  # APPLICATIONINSIGHTS_CONNECTION_STRING app setting back into site_config, so as an app setting
+  # it differed on every plan.
   app_insights_settings = {
     for k, a in var.function_apps : k => merge(
-      a.app_insights_connection_string != null ? { APPLICATIONINSIGHTS_CONNECTION_STRING = a.app_insights_connection_string } : {},
       a.app_insights_connection_string != null && a.create_user_assigned_identity ? {
         APPLICATIONINSIGHTS_AUTHENTICATION_STRING = "ClientId=${azurerm_user_assigned_identity.this[k].client_id};Authorization=AAD"
       } : {},
@@ -298,7 +300,7 @@ resource "azurerm_function_app_flex_consumption" "this" {
     api_definition_url                            = each.value.site_config.api_definition_url
     api_management_api_id                         = each.value.site_config.api_management_api_id
     app_command_line                              = each.value.site_config.app_command_line
-    application_insights_connection_string        = each.value.site_config.application_insights_connection_string
+    application_insights_connection_string        = each.value.site_config.application_insights_connection_string != null ? each.value.site_config.application_insights_connection_string : each.value.app_insights_connection_string
     application_insights_key                      = each.value.site_config.application_insights_key
     container_registry_managed_identity_client_id = each.value.site_config.container_registry_managed_identity_client_id
     container_registry_use_managed_identity       = each.value.site_config.container_registry_use_managed_identity
